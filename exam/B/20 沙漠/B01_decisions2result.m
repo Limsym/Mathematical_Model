@@ -1,0 +1,77 @@
+tic;clear;clc
+load('B01','C0','c','dig','dist','m','M','p','stay','T','W','walk','whe')
+bs=[1 2 3];
+time=0;x=0;
+for aaa=1:10^3
+    time=time+1;
+    [ds]=crdc(x);
+    % 开始求解
+    day=1;ys=1;
+    for hang=1:size(ds,1)
+        if ds(hang,3)==0
+            C(hang)=0;
+            dC(hang)=0;
+            dN1(hang,:)=0;
+            dN2(hang,:)=0;
+            N(hang,:)=[0 0];
+        else
+            [day,ncs,dN,dCt,report]=BetaGo(ds(hang,3),day);
+            if report~=[1 1] ys=0;end
+            dN1(hang,:)=dN;
+            day=day+1;
+            if ds(hang,3) == 12
+                N0=[ds(1,1),ds(1,2)];
+                dC(hang)=-sum(( p.* ds(hang,1:2) ) * bs(1));
+            elseif ds(hang,3)>20 && ds(hang,3)<30   % 经村庄旅行
+                dN1(hang,:)=[0,0];
+                dN2(hang,:)=ds(hang,1:2);
+                dC(hang)=-sum(( p.* ds(hang,1:2) ) * bs(2));
+            elseif ds(hang,3)>30                    % 采矿
+                day=day+ds(hang,4);
+                dN1(hang,:)=dN*1.5;
+                dN2(hang,:)=[ds(hang,1);ds(hang,2)];
+                dC(hang)=W*(ds(hang,4)-1);
+            elseif mod(ds(hang,3),10)==4
+                dN1(hang,:)=dN;
+                dN2(hang,:)=[ds(hang,1);ds(hang,2)];
+                dC(hang)=-W*(ds(hang,4)-1);
+            else report=[hang,ds(hang,3)],ys=0      % disp('ERROR2')
+            end
+        end
+        if hang==1
+            C(1,hang)=C0+dC(1,hang);
+            N=N0+dN;
+        else C(1,hang)=C(1,hang-1)+dC(1,hang);
+            for i=1:2
+                N(hang,i)=N(hang-1,i)+dN1(hang,i)+dN2(hang,i);
+            end
+        end
+        if n2we(N(hang,:)) ~= 1
+            ys=0;
+            %disp('超重行');disp(hang)
+            break
+        end
+    end
+    if min(N)<0
+        ys=0;
+    end
+    if ys==1
+        if time < 100
+            record(:,:,time)=ds;    % record2(:,:,time)=ds;
+            for i=1:size(C,2)
+                CC(time,i)=C(i);
+            end
+        elseif C(6) > CC(nn,6) && C(6)>=10000
+            record(:,:,nn)=ds;
+            for i=1:size(C,2)
+                CC(nn,i)=C(i);
+            end
+        end
+        [CC,index]=sortrows(CC,-6);
+        record=record(:,:,index);
+        [nn,mm]=size(CC);
+        if nn>500
+            nn=500;
+        end
+    end
+end;toc

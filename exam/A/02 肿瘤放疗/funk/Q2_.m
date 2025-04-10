@@ -1,0 +1,53 @@
+clear;clc;load('data');tic
+data2_1=xlsread('附件2：单次放疗不同剂量肿瘤数据',1,'a3:b131');
+D=[20 30];
+[n1,~]=size(data2_1);
+tr1=data2_1(:,1)';
+for i=1:n1-1
+    dt1(i)=tr1(i+1)-tr1(i);
+end
+tmax(1)=max(tr1);
+Vr1=data2_1(:,2)';
+V1(1)=Vr1(1);
+data2_2=xlsread('附件2：单次放疗不同剂量肿瘤数据',2,'a3:b118');
+[n2,~]=size(data2_2);
+tr2=data2_2(:,1)';
+for i=1:n2-1
+    dt2(i)=tr2(i+1)-tr2(i);
+end
+tmax(2)=max(tr2);
+Vr2=data2_2(:,2)';
+V2(1)=Vr2(1);
+minpc=inf;
+for alpha=29:0.01:30
+    for beta=0:0.01:4
+        for i=1:n1-1
+            dV1(i)=(r*V1(i)*(1-V1(i)/K)-(alpha*D(1)+beta*D(1)^2))*V1(i)*dt1(i);
+            V1(i+1)=V1(i)+dV1(i);
+        end
+        for i=1:n2-1
+            dV2(i)=(r*V2(i)*(1-V2(i)/K)-(alpha*D(2)+beta*D(2)^2))*V2(i)*dt2(i);
+            V2(i+1)=V2(i)+dV2(i);
+        end
+        pc1=sum((V1-Vr1).^2);
+        pc2=sum((V2-Vr2).^2);
+        if pc1+pc2<minpc
+            minpc=pc1+pc2;A=alpha;B=beta;
+        end
+    end
+end
+save('r2','A','B')
+Q=[sum((V1-Vr1).^2) sum((V2-Vr2).^2)];
+X=[sum(Vr1.^2) sum(Vr2.^2)];
+R=[1-sqrt(Q./X)];
+for i=1:n1-1
+    dV1(i)=(r*V1(i)*(1-V1(i)/K)-(A*D(1)+B*D(1)^2))*V1(i)*dt1(i);
+    V1(i+1)=V1(i)+dV1(i);
+end
+for i=1:n2-1
+    dV2(i)=(r*V2(i)*(1-V2(i)/K)-(A*D(2)+B*D(2)^2))*V2(i)*dt2(i);
+    V2(i+1)=V2(i)+dV2(i);
+end
+figure;plot(tr1,Vr1,'linewidth',6.5),hold on,plot([tr1],[V1(1:n1)],'r','linewidth',2.5);
+plot(tr2,Vr2,'linewidth',6.5),hold on,plot([tr2],[V2(1:n2)],'r','linewidth',2.5);
+xlabel('时间（day）');ylabel('肿瘤体积（mm^3）');legend('20Gy原始曲线','20Gy拟合曲线','30Gy原始曲线','30Gy拟合曲线');toc
